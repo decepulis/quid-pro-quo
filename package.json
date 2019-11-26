@@ -1,23 +1,24 @@
 {
-  "name": "webpack-boilerplate",
+  "name": "quid-pro-quo",
   "version": "1.0.0",
   "description": "",
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "webpack-dev-server --open --config webpack.dev.js",
+    "start": "webpack-dev-server --open --config webpack.dev.js",
     "build": "webpack --config webpack.prod.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/decepulis/webpack-boilerplate.git"
+    "url": "git+https://github.com/decepulis/quid-pro-quo.git"
   },
   "author": "",
   "license": "UNLICENSED",
   "bugs": {
-    "url": "https://github.com/decepulis/webpack-boilerplate/issues"
+    "url": "https://github.com/decepulis/quid-pro-quo/issues"
   },
-  "homepage": "https://github.com/decepulis/webpack-boilerplate#readme",
+  "homepage": "https://github.com/decepulis/quid-pro-quo#readme",
   "devDependencies": {
     "@babel/core": "^7.5.5",
     "@babel/preset-env": "^7.5.5",
