@@ -19,6 +19,11 @@ module.exports = {
       chunks: ["index"]
     })
   ],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "src/")
+    }
+  },
   module: {
     rules: [
       {

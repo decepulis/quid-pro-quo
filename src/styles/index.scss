@@ -1,5 +1,11 @@
-@import 'base.scss';
+@import "base.scss";
 
-html {
-    background: $primary;
+.links line {
+  stroke: #aaa;
+}
+
+.nodes circle {
+  pointer-events: all;
+  stroke: none;
+  stroke-width: 40px;
 }
