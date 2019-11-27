@@ -8,11 +8,41 @@ const onReady = () => {
   // ********************************** //
   // ** DOM
   // ********************************** //
-  const svg = d3.select("svg");
-  const svgWidth = +svg.attr("width");
-  const svgHeight = +svg.attr("height");
+  const body = d3.select("body");
 
-  const link = svg
+  // initial zoom parameters
+  const {
+    width: bodyWidth,
+    height: bodyHeight
+  } = body.node().getBoundingClientRect();
+  const initX = bodyWidth / 2;
+  const initY = bodyHeight / 2;
+  const initScale = 1;
+  const initTransform = d3.zoomIdentity
+    .translate(initX, initY)
+    .scale(initScale);
+  const zoom = d3.zoom().on("zoom", handleZoom);
+
+  // page-filling svg
+  const svg = body
+    .append("svg")
+    .attr("width", "100%")
+    .attr("height", "100%")
+    .call(zoom) // add zoom functionality
+    .call(zoom.transform, initTransform); // zoom function knows about init
+
+  // box in svg that contains graph
+  const zoomBox = svg
+    .append("g")
+    .attr("class", "zoom")
+    .attr("transform", initTransform); // dom element knows about init transform
+
+  function handleZoom() {
+    if (zoomBox) zoomBox.attr("transform", d3.event.transform);
+  }
+
+  // links in zoomBox
+  const link = zoomBox
     .append("g")
     .attr("class", "links")
     .selectAll("line")
@@ -20,9 +50,9 @@ const onReady = () => {
     .join("line")
     .attr("stroke-width", d => Math.sqrt(d.value) / 2);
 
+  // node groups in zoomBox
   const nodeColorScale = d3.scaleOrdinal(d3.schemeCategory10);
-
-  const node = svg
+  const node = zoomBox
     .append("g")
     .attr("class", "nodes")
     // data
@@ -32,12 +62,13 @@ const onReady = () => {
     .append("g")
     .attr("class", "node");
 
+  // circles in node groups
   const circles = node
     .append("circle")
     .attr("r", 5)
     .attr("fill", d => nodeColorScale(d.group));
 
-  // labels
+  // labels in node groups
   const labels = node
     .append("text")
     .text(d => d.id)
@@ -57,6 +88,9 @@ const onReady = () => {
     node.attr("transform", d => `translate(${d.x},${d.y})`);
   };
 
+  const zoomBoxWidth = +zoomBox.attr("width");
+  const zoomBoxHeight = +zoomBox.attr("height");
+
   const simulation = d3
     .forceSimulation(graph.nodes)
     // Simulation gets updated every tick
@@ -67,7 +101,7 @@ const onReady = () => {
       d3.forceManyBody().strength(-50) // default -30
     )
     // Nodes attracted to canvas center
-    .force("center", d3.forceCenter(svgWidth / 2, svgHeight / 2))
+    .force("center", d3.forceCenter(zoomBoxWidth / 2, zoomBoxHeight / 2))
     // Links are fixed distanced away from each other
     .force(
       "link",
