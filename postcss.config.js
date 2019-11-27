@@ -1,8 +1,11 @@
-module.exports = ({
-    plugins: {
-        autoprefixer: true,
-        cssnano: {
-            preset: 'default'
-        }
-    }
-});  
+const postcssNormalize = require("postcss-normalize");
+
+module.exports = {
+  plugins: [
+    postcssNormalize(),
+    require("autoprefixer"),
+    require("cssnano")({
+      preset: "default"
+    })
+  ]
+};
