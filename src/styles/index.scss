@@ -8,11 +8,19 @@ body {
   right: 0;
 }
 
+.zoom,
+.node {
+  will-change: transform;
+}
+
+.container:active {
+  cursor: move;
+}
+
 .links line {
   stroke: #aaaaaa88;
 }
 
 text {
-  font-family: sans-serif;
   font-size: 10px;
 }

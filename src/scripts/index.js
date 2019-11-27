@@ -13,6 +13,7 @@ const onReady = () => {
   // page-filling svg
   const svg = body
     .append("svg")
+    .attr("class", "container")
     .attr("width", "100%")
     .attr("height", "100%");
 
@@ -92,33 +93,6 @@ const onReady = () => {
   // ********************************** //
   // ** User Inputs
   // ********************************** //
-
-  // What a drag
-  const drag = {
-    started: d => {
-      if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-      d.fx = d.x;
-      d.fy = d.y;
-    },
-    dragged: d => {
-      d.fx = d3.event.x;
-      d.fy = d3.event.y;
-    },
-    ended: d => {
-      if (!d3.event.active) simulation.alphaTarget(0);
-      d.fx = null;
-      d.fy = null;
-    }
-  };
-
-  node.call(
-    d3
-      .drag()
-      .on("start", drag.started)
-      .on("drag", drag.dragged)
-      .on("end", drag.ended)
-  );
-
   // Zoom, Pan, and Window Resize
 
   // -- Functions
