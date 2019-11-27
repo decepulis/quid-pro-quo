@@ -10,36 +10,14 @@ const onReady = () => {
   // ********************************** //
   const body = d3.select("body");
 
-  // initial zoom parameters
-  const {
-    width: bodyWidth,
-    height: bodyHeight
-  } = body.node().getBoundingClientRect();
-  const initX = bodyWidth / 2;
-  const initY = bodyHeight / 2;
-  const initScale = 1;
-  const initTransform = d3.zoomIdentity
-    .translate(initX, initY)
-    .scale(initScale);
-  const zoom = d3.zoom().on("zoom", handleZoom);
-
   // page-filling svg
   const svg = body
     .append("svg")
     .attr("width", "100%")
-    .attr("height", "100%")
-    .call(zoom) // add zoom functionality
-    .call(zoom.transform, initTransform); // zoom function knows about init
+    .attr("height", "100%");
 
   // box in svg that contains graph
-  const zoomBox = svg
-    .append("g")
-    .attr("class", "zoom")
-    .attr("transform", initTransform); // dom element knows about init transform
-
-  function handleZoom() {
-    if (zoomBox) zoomBox.attr("transform", d3.event.transform);
-  }
+  const zoomBox = svg.append("g").attr("class", "zoom");
 
   // links in zoomBox
   const link = zoomBox
@@ -114,6 +92,8 @@ const onReady = () => {
   // ********************************** //
   // ** User Inputs
   // ********************************** //
+
+  // What a drag
   const drag = {
     started: d => {
       if (!d3.event.active) simulation.alphaTarget(0.3).restart();
@@ -137,6 +117,66 @@ const onReady = () => {
       .on("start", drag.started)
       .on("drag", drag.dragged)
       .on("end", drag.ended)
+  );
+
+  // Zoom, Pan, and Window Resize
+
+  // -- Functions
+  // ---- Handling Window Resize
+  let xPrc = 0.5;
+  let yPrc = 0.5;
+  let scale = 1;
+
+  const resizeTransform = () => {
+    const { width: bodyWidth, height: bodyHeight } = d3
+      .select("body")
+      .node()
+      .getBoundingClientRect();
+    const newX = bodyWidth * xPrc;
+    const newY = bodyHeight * yPrc;
+
+    return d3.zoomIdentity.translate(newX, newY).scale(scale);
+  };
+
+  // ---- Handling Zoom
+  const handleZoom = () => {
+    // First, log zoom position so we can apply it
+    // during window resize
+    const { x, y, k } = d3.event.transform;
+    const { width: bodyWidth, height: bodyHeight } = d3
+      .select("body")
+      .node()
+      .getBoundingClientRect();
+
+    xPrc = x / bodyWidth;
+    yPrc = y / bodyHeight;
+    scale = k;
+
+    // Then, we apply the zoom position
+    zoomBox.attr("transform", d3.event.transform);
+  };
+
+  // -- Initial Values
+  const {
+    width: initBodyWidth,
+    height: initBodyHeight
+  } = body.node().getBoundingClientRect();
+  const initX = initBodyWidth * xPrc;
+  const initY = initBodyHeight * yPrc;
+  const initScale = scale;
+  const initTransform = d3.zoomIdentity
+    .translate(initX, initY)
+    .scale(initScale);
+  const zoom = d3.zoom().on("zoom", handleZoom);
+
+  // -- Applying to elements
+  svg
+    .call(zoom) // add zoom functionality
+    .call(zoom.transform, initTransform); // zoom function knows about init
+  zoomBox.attr("transform", initTransform); // dom element knows about init transform
+
+  d3.select(window).on(`resize.${svg.attr("id")}`, () =>
+    svg.call(zoom.transform, resizeTransform)
   );
 };
 document.addEventListener("DOMContentLoaded", onReady);
