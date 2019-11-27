@@ -1,14 +1,43 @@
 import * as d3 from "d3";
-import graph from "@/assets/miserables.json";
+
+const Airtable = require("airtable");
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+  process.env.AIRTABLE_DB_ID
+);
 
 const getWidthHeight = selElement => {
   const { width, height } = selElement.node().getBoundingClientRect();
   return [width, height];
 };
 
-console.log("key: ", process.env.AIRTABLE_API_KEY);
+const loaded = {
+  document: false,
+  nodes: false,
+  links: false
+};
+const loadingElements = {
+  document: null,
+  nodes: "#nodes-loading",
+  links: "#links-loading"
+};
 
-const onReady = () => {
+const graph = { nodes: [], links: [] };
+
+const updateLoading = completed => {
+  loaded[completed] = true;
+
+  Object.entries(loadingElements).forEach(([key, selector]) => {
+    if (loaded[key] && !!selector) {
+      document.querySelector(selector).style.display = "none";
+    }
+  });
+
+  if (Object.values(loaded).every(loadComplete => loadComplete)) {
+    plotGraph();
+  }
+};
+
+const plotGraph = () => {
   // ********************************** //
   // ** DOM
   // ********************************** //
@@ -30,8 +59,7 @@ const onReady = () => {
     .attr("class", "links")
     .selectAll("line")
     .data(graph.links)
-    .join("line")
-    .attr("stroke-width", d => Math.sqrt(d.value) / 2);
+    .join("line");
 
   // node groups in zoomBox
   const nodeColorScale = d3.scaleOrdinal(d3.schemeCategory10);
@@ -49,12 +77,12 @@ const onReady = () => {
   const circles = node
     .append("circle")
     .attr("r", 5)
-    .attr("fill", d => nodeColorScale(d.group));
+    .attr("fill", d => nodeColorScale(d.Position));
 
   // labels in node groups
   const labels = node
     .append("text")
-    .text(d => d.id)
+    .text(d => d.Person)
     .attr("x", 6)
     .attr("y", 3);
 
@@ -168,4 +196,70 @@ const onReady = () => {
     svg.call(newZoom.transform, resizeTransform);
   });
 };
-document.addEventListener("DOMContentLoaded", onReady);
+
+const fetchData = () => {
+  base("People")
+    .select({ view: "Grid view" })
+    .eachPage(
+      // for each page of records...
+      function page(records, fetchNextPage) {
+        // ...we update the graph.nodes array...
+        graph.nodes = [
+          // ...by appending what we have so far...
+          ...graph.nodes,
+          // ...and appending a transformed version
+          //    of each record...
+          ...records.map(record => {
+            // ...for which we return an object
+            //    containing the record's id and fields.
+            const { fields, id } = record;
+            return { ...fields, id };
+          })
+        ];
+        fetchNextPage();
+      },
+      function done(err) {
+        if (err) {
+          console.error(err);
+          alert(err);
+          return;
+        }
+        updateLoading("nodes");
+      }
+    );
+
+  base("Relationships")
+    .select({ view: "Grid view" })
+    .eachPage(
+      // for each page of records...
+      function page(records, fetchNextPage) {
+        // ...we update the graph.links array...
+        graph.links = [
+          // ...by appending what we have so far...
+          ...graph.links,
+          // ...and appending a transformed version
+          //    of each record...
+          ...records.map(record => {
+            // ...for which we return an object
+            //    containing the record's id and.
+            const { fields, id } = record;
+            const source = fields.source ? fields.source[0] : null;
+            const target = fields.target ? fields.target[0] : null;
+            return { ...fields, source, target, id };
+          })
+        ];
+        fetchNextPage();
+      },
+      function done(err) {
+        if (err) {
+          console.error(err);
+          alert(err);
+          return;
+        }
+        updateLoading("links");
+      }
+    );
+};
+fetchData();
+
+document.addEventListener("DOMContentLoaded", () => updateLoading("document"));
