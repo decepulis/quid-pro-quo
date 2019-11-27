@@ -4,6 +4,11 @@ import "../styles/index.scss";
 import * as d3 from "d3";
 import graph from "@/assets/miserables.json";
 
+const getWidthHeight = selElement => {
+  const { width, height } = selElement.node().getBoundingClientRect();
+  return [width, height];
+};
+
 const onReady = () => {
   // ********************************** //
   // ** DOM
@@ -130,27 +135,38 @@ const onReady = () => {
     zoomBox.attr("transform", d3.event.transform);
   };
 
+  const zoomWithExtent = extElement => {
+    const [width, height] = getWidthHeight(extElement);
+    return d3
+      .zoom()
+      .scaleExtent([0.5, 10])
+      .translateExtent([
+        [-width, -height],
+        [width, height]
+      ])
+      .on("zoom", handleZoom);
+  };
+
   // -- Initial Values
-  const {
-    width: initBodyWidth,
-    height: initBodyHeight
-  } = body.node().getBoundingClientRect();
+  const [initBodyWidth, initBodyHeight] = getWidthHeight(body);
   const initX = initBodyWidth * xPrc;
   const initY = initBodyHeight * yPrc;
   const initScale = scale;
   const initTransform = d3.zoomIdentity
     .translate(initX, initY)
     .scale(initScale);
-  const zoom = d3.zoom().on("zoom", handleZoom);
 
   // -- Applying to elements
+  const zoom = zoomWithExtent(body);
   svg
     .call(zoom) // add zoom functionality
     .call(zoom.transform, initTransform); // zoom function knows about init
   zoomBox.attr("transform", initTransform); // dom element knows about init transform
 
-  d3.select(window).on(`resize.${svg.attr("id")}`, () =>
-    svg.call(zoom.transform, resizeTransform)
-  );
+  d3.select(window).on(`resize.${svg.attr("id")}`, () => {
+    const newZoom = zoomWithExtent(body);
+    svg.call(newZoom);
+    svg.call(newZoom.transform, resizeTransform);
+  });
 };
 document.addEventListener("DOMContentLoaded", onReady);
