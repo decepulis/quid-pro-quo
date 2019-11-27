@@ -5,42 +5,48 @@ import * as d3 from "d3";
 import graph from "@/assets/miserables.json";
 
 const onReady = () => {
-  // ** SIMULATION SETUP ** //
+  // ********************************** //
+  // ** DOM
+  // ********************************** //
   const svg = d3.select("svg");
   const svgWidth = +svg.attr("width");
   const svgHeight = +svg.attr("height");
-
-  const simulation = d3
-    .forceSimulation()
-    .force(
-      "link",
-      d3.forceLink().id(d => d.id)
-    )
-    // Repel each-other
-    .force("charge", d3.forceManyBody())
-    // Attracted to canvas center
-    .force("center", d3.forceCenter(svgWidth / 2, svgHeight / 2));
 
   const link = svg
     .append("g")
     .attr("class", "links")
     .selectAll("line")
     .data(graph.links)
-    .enter()
-    .append("line");
+    .join("line")
+    .attr("stroke-width", d => Math.sqrt(d.value) / 2);
+
+  const nodeColorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
   const node = svg
     .append("g")
     .attr("class", "nodes")
-    .selectAll("circle")
+    // data
+    .selectAll("g")
     .data(graph.nodes)
     .enter()
+    .append("g")
+    .attr("class", "node");
+
+  const circles = node
     .append("circle")
-    .attr("r", 2.5);
+    .attr("r", 5)
+    .attr("fill", d => nodeColorScale(d.group));
 
-  node.append("title").text(d => d.id);
+  // labels
+  const labels = node
+    .append("text")
+    .text(d => d.id)
+    .attr("x", 6)
+    .attr("y", 3);
 
-  // ** FUNCTION DECLARATION AND BINDING ** //
+  // ********************************** //
+  // ** Forces
+  // ********************************** //
   const ticked = () => {
     link
       .attr("x1", d => d.source.x)
@@ -48,10 +54,32 @@ const onReady = () => {
       .attr("x2", d => d.target.x)
       .attr("y2", d => d.target.y);
 
-    node.attr("cx", d => d.x).attr("cy", d => d.y);
+    node.attr("transform", d => `translate(${d.x},${d.y})`);
   };
-  simulation.nodes(graph.nodes).on("tick", ticked);
 
+  const simulation = d3
+    .forceSimulation(graph.nodes)
+    // Simulation gets updated every tick
+    .on("tick", ticked)
+    // Nodes repel each-other
+    .force(
+      "charge",
+      d3.forceManyBody().strength(-50) // default -30
+    )
+    // Nodes attracted to canvas center
+    .force("center", d3.forceCenter(svgWidth / 2, svgHeight / 2))
+    // Links are fixed distanced away from each other
+    .force(
+      "link",
+      d3
+        .forceLink(graph.links)
+        .id(d => d.id)
+        .distance(30)
+    );
+
+  // ********************************** //
+  // ** User Inputs
+  // ********************************** //
   const drag = {
     started: d => {
       if (!d3.event.active) simulation.alphaTarget(0.3).restart();
@@ -76,7 +104,5 @@ const onReady = () => {
       .on("drag", drag.dragged)
       .on("end", drag.ended)
   );
-
-  simulation.force("link").links(graph.links);
 };
 document.addEventListener("DOMContentLoaded", onReady);

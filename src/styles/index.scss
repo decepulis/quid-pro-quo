@@ -1,11 +1,10 @@
 @import "base.scss";
 
 .links line {
-  stroke: #aaa;
+  stroke: #aaaaaa88;
 }
 
-.nodes circle {
-  pointer-events: all;
-  stroke: none;
-  stroke-width: 40px;
+text {
+  font-family: sans-serif;
+  font-size: 10px;
 }
