@@ -1,15 +1,19 @@
 import * as d3 from "d3";
-
 const Airtable = require("airtable");
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   process.env.AIRTABLE_DB_ID
 );
-
+// ********************************** //
+// ** Utilities
+// ********************************** //
 const getWidthHeight = selElement => {
   const { width, height } = selElement.node().getBoundingClientRect();
   return [width, height];
 };
 
+// ********************************** //
+// ** Handle Loading State
+// ********************************** //
 const loaded = {
   document: false,
   nodes: false,
@@ -20,8 +24,6 @@ const loadingElements = {
   nodes: "#nodes-loading",
   links: "#links-loading"
 };
-
-const graph = { nodes: [], links: [] };
 
 const updateLoading = completed => {
   loaded[completed] = true;
@@ -37,11 +39,19 @@ const updateLoading = completed => {
   }
 };
 
+// ********************************** //
+// ** Graphing!!
+// ********************************** //
+const graph = { nodes: [], links: [] };
 const plotGraph = () => {
   // ********************************** //
   // ** DOM
   // ********************************** //
   const body = d3.select("body");
+
+  const tooltip = body.append("div").attr("class", "tooltip");
+  const tooltipTitle = tooltip.append("b").text("Title");
+  const tooltipText = tooltip.append("div");
 
   // page-filling svg
   const svg = body
@@ -74,9 +84,10 @@ const plotGraph = () => {
     .attr("class", "node");
 
   // circles in node groups
+  const circleRadius = 11;
   const circles = node
     .append("circle")
-    .attr("r", 5)
+    .attr("r", circleRadius)
     .attr("fill", d => nodeColorScale(d.Position));
 
   // labels in node groups
@@ -125,8 +136,43 @@ const plotGraph = () => {
   // ********************************** //
   // ** User Inputs
   // ********************************** //
-  // Zoom, Pan, and Window Resize
+  // Tooltips
+  circles
+    .on("mouseover", (d, i, nodes) => {
+      const circle = nodes[i];
 
+      d3.select(circle).attr("r", circleRadius * 2);
+      d3.select(circle.parentNode)
+        .selectAll("text")
+        .style("visibility", "hidden");
+
+      tooltipTitle.text(d.Person);
+      const photo = d.Photo
+        ? `<img src = "${d.Photo}" alt = "Photo of ${d.Person}" >`
+        : `<small>No photo available.</small>`;
+      tooltipText.html(`
+        <p>Position:<br/>${d.Position}</p>
+        ${photo}
+      `);
+      tooltip.style("visibility", "visible");
+    })
+    .on("mousemove", () =>
+      tooltip
+        .style("top", d3.event.pageY - 10 + "px")
+        .style("left", d3.event.pageX + 10 + "px")
+    )
+    .on("mouseout", (d, i, nodes) => {
+      const circle = nodes[i];
+
+      d3.select(circle).attr("r", circleRadius);
+      d3.select(circle.parentNode)
+        .selectAll("text")
+        .style("visibility", "visible");
+
+      tooltip.style("visibility", "hidden");
+    });
+
+  // Zoom, Pan, and Window Resize
   // -- Functions
   // ---- Handling Window Resize
   let xPrc = 0.5;
@@ -197,6 +243,9 @@ const plotGraph = () => {
   });
 };
 
+// ********************************** //
+// ** Data Fetching!!
+// ********************************** //
 const fetchData = () => {
   base("People")
     .select({ view: "Grid view" })
