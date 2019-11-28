@@ -245,7 +245,7 @@ const plotGraph = () => {
   // -- Applying to elements
   const zoom = d3
     .zoom()
-    .scaleExtent([0.5, 10])
+    .scaleExtent([0.5, 5])
     .on("zoom", handleZoom);
 
   svg
