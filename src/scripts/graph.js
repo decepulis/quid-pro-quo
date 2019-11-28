@@ -139,12 +139,22 @@ const plotGraph = () => {
   // ** User Inputs
   // ********************************** //
   // Tooltips
+  let tooltipNode = null;
+  const updateTooltipPosition = () => {
+    if (!tooltipNode) return;
+
+    let { top, left } = tooltipNode.getBoundingClientRect();
+    tooltip
+      .style("top", top + circleRadius * 2 + "px")
+      .style("left", left + circleRadius * 4 + "px");
+  };
+
   circles
     .on("mouseover", (d, i, nodes) => {
-      const circle = nodes[i];
+      tooltipNode = nodes[i];
 
-      d3.select(circle).attr("r", circleRadius * 2);
-      d3.select(circle.parentNode)
+      d3.select(tooltipNode).attr("r", circleRadius * 2);
+      d3.select(tooltipNode.parentNode)
         .selectAll("text")
         .style("visibility", "hidden");
 
@@ -158,20 +168,17 @@ const plotGraph = () => {
       `);
       tooltip.style("visibility", "visible");
     })
-    .on("mousemove", () =>
-      tooltip
-        .style("top", d3.event.pageY - 10 + "px")
-        .style("left", d3.event.pageX + 10 + "px")
-    )
+    .on("mousemove", updateTooltipPosition)
     .on("mouseout", (d, i, nodes) => {
-      const circle = nodes[i];
+      tooltipNode = nodes[i];
 
-      d3.select(circle).attr("r", circleRadius);
-      d3.select(circle.parentNode)
+      d3.select(tooltipNode).attr("r", circleRadius);
+      d3.select(tooltipNode.parentNode)
         .selectAll("text")
         .style("visibility", "visible");
 
       tooltip.style("visibility", "hidden");
+      tooltipNode = null;
     });
 
   // Zoom, Pan, and Window Resize
@@ -231,6 +238,9 @@ const plotGraph = () => {
     // Then, we apply the zoom position
     updateExtent();
     zoomBox.attr("transform", d3.event.transform);
+
+    // and lastly, update the tooltip position
+    updateTooltipPosition();
   };
 
   // -- Initial Values
@@ -253,9 +263,10 @@ const plotGraph = () => {
     .call(zoom.transform, initTransform); // zoom function knows about init
   zoomBox.attr("transform", initTransform); // dom element knows about init transform
 
-  d3.select(window).on(`resize.${svg.attr("id")}`, () =>
-    svg.call(zoom).call(zoom.transform, resizeTransform)
-  );
+  d3.select(window).on(`resize.${svg.attr("id")}`, () => {
+    updateTooltipPosition();
+    svg.call(zoom).call(zoom.transform, resizeTransform);
+  });
 };
 
 // ********************************** //
