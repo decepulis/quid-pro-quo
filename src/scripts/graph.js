@@ -138,6 +138,10 @@ const plotGraph = () => {
   // ********************************** //
   // ** User Inputs
   // ********************************** //
+  let centerX = 0.5;
+  let centerY = 0.5;
+  let scale = 1;
+
   // Tooltips
   let tooltipNode = null;
   const updateTooltipPosition = () => {
@@ -145,8 +149,8 @@ const plotGraph = () => {
 
     let { top, left } = tooltipNode.getBoundingClientRect();
     tooltip
-      .style("top", top + circleRadius * 2 + "px")
-      .style("left", left + circleRadius * 4 + "px");
+      .style("top", top + circleRadius * scale * 2 + "px")
+      .style("left", left + circleRadius * scale * 4 + "px");
   };
 
   circles
@@ -184,17 +188,13 @@ const plotGraph = () => {
   // Zoom, Pan, and Window Resize
   // -- Functions
   // ---- Handling Window Resize
-  let xPrc = 0.5;
-  let yPrc = 0.5;
-  let scale = 1;
-
   const resizeTransform = () => {
     const { width: bodyWidth, height: bodyHeight } = d3
       .select("body")
       .node()
       .getBoundingClientRect();
-    const newX = bodyWidth * xPrc;
-    const newY = bodyHeight * yPrc;
+    const newX = bodyWidth * centerX;
+    const newY = bodyHeight * centerY;
 
     return d3.zoomIdentity.translate(newX, newY).scale(scale);
   };
@@ -231,8 +231,8 @@ const plotGraph = () => {
       .node()
       .getBoundingClientRect();
 
-    xPrc = x / bodyWidth;
-    yPrc = y / bodyHeight;
+    centerX = x / bodyWidth;
+    centerY = y / bodyHeight;
     scale = k;
 
     // Then, we apply the zoom position
@@ -245,8 +245,8 @@ const plotGraph = () => {
 
   // -- Initial Values
   const [initBodyWidth, initBodyHeight] = getWidthHeight(body);
-  const initX = initBodyWidth * xPrc;
-  const initY = initBodyHeight * yPrc;
+  const initX = initBodyWidth * centerX;
+  const initY = initBodyHeight * centerY;
   const initScale = scale;
   const initTransform = d3.zoomIdentity
     .translate(initX, initY)
