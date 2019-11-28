@@ -113,10 +113,12 @@ const plotGraph = () => {
   const zoomBoxWidth = +zoomBox.attr("width");
   const zoomBoxHeight = +zoomBox.attr("height");
 
+  let simulationComplete = false;
   const simulation = d3
     .forceSimulation(graph.nodes)
     // Simulation gets updated every tick
     .on("tick", ticked)
+    .on("end", () => (simulationComplete = true))
     // Nodes repel each-other
     .force(
       "charge",
@@ -191,6 +193,28 @@ const plotGraph = () => {
   };
 
   // ---- Handling Zoom
+  const updateExtent = () => {
+    const [svgWidth, svgHeight] = getWidthHeight(svg);
+    const margin = 100;
+
+    let ext0 = [-(svgWidth + margin) / scale, -(svgHeight + margin) / scale];
+    let ext1 = [(svgWidth + margin) / scale, (svgHeight + margin) / scale];
+
+    if (simulationComplete) {
+      const [boxWidth, boxHeight] = getWidthHeight(zoomBox);
+      ext0 = [
+        -(svgWidth + boxWidth / 2 - margin) / scale,
+        -(svgHeight + boxHeight / 2 - margin) / scale
+      ];
+      ext1 = [
+        (svgWidth + boxWidth / 2 - margin) / scale,
+        (svgHeight + boxHeight / 2 - margin) / scale
+      ];
+    }
+
+    zoom.translateExtent([ext0, ext1]);
+  };
+
   const handleZoom = () => {
     // First, log zoom position so we can apply it
     // during window resize
@@ -205,19 +229,8 @@ const plotGraph = () => {
     scale = k;
 
     // Then, we apply the zoom position
+    updateExtent();
     zoomBox.attr("transform", d3.event.transform);
-  };
-
-  const zoomWithExtent = extElement => {
-    const [width, height] = getWidthHeight(extElement);
-    return d3
-      .zoom()
-      .scaleExtent([0.5, 10])
-      .translateExtent([
-        [-width, -height],
-        [width, height]
-      ])
-      .on("zoom", handleZoom);
   };
 
   // -- Initial Values
@@ -230,17 +243,19 @@ const plotGraph = () => {
     .scale(initScale);
 
   // -- Applying to elements
-  const zoom = zoomWithExtent(body);
+  const zoom = d3
+    .zoom()
+    .scaleExtent([0.5, 10])
+    .on("zoom", handleZoom);
+
   svg
     .call(zoom) // add zoom functionality
     .call(zoom.transform, initTransform); // zoom function knows about init
   zoomBox.attr("transform", initTransform); // dom element knows about init transform
 
-  d3.select(window).on(`resize.${svg.attr("id")}`, () => {
-    const newZoom = zoomWithExtent(body);
-    svg.call(newZoom);
-    svg.call(newZoom.transform, resizeTransform);
-  });
+  d3.select(window).on(`resize.${svg.attr("id")}`, () =>
+    svg.call(zoom).call(zoom.transform, resizeTransform)
+  );
 };
 
 // ********************************** //
